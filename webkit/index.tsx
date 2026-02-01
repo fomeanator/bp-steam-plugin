@@ -679,16 +679,67 @@ input:focus {
 // API ФУНКЦИИ
 // ============================================
 
+// Debug log visible in UI
+function debugLog(message: string, isError = false) {
+  console.log(`[BattlePass] ${message}`);
+
+  // Create debug panel if not exists
+  let debugPanel = document.getElementById('bp-debug-panel');
+  if (!debugPanel) {
+    debugPanel = document.createElement('div');
+    debugPanel.id = 'bp-debug-panel';
+    debugPanel.style.cssText = `
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      width: 400px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.9);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 9999999;
+      border: 1px solid #333;
+    `;
+    document.body.appendChild(debugPanel);
+  }
+
+  const line = document.createElement('div');
+  line.style.color = isError ? '#f44' : '#0f0';
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  debugPanel.appendChild(line);
+  debugPanel.scrollTop = debugPanel.scrollHeight;
+}
+
 async function apiRequest(endpoint: string, method = 'GET', body: any = null, token: string | null = null) {
+  debugLog(`API ${method} ${endpoint}`);
+
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const options: RequestInit = { method, headers };
   if (body && method !== 'GET') options.body = JSON.stringify(body);
 
-  const res = await fetch(`${API_BASE}${endpoint}`, options);
-  if (!res.ok) throw new Error('API Error');
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, options);
+    debugLog(`Response: ${res.status} ${res.statusText}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      debugLog(`Error body: ${errorText.substring(0, 100)}`, true);
+      throw new Error(`API Error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    debugLog(`Success: ${JSON.stringify(data).substring(0, 50)}...`);
+    return data;
+  } catch (error: any) {
+    debugLog(`Fetch error: ${error.message}`, true);
+    throw error;
+  }
 }
 
 // Получить Steam ID64 и логин со страницы
@@ -1461,7 +1512,10 @@ function showNotification(message: string, type = 'info', showSupport = false) {
 // ============================================
 
 async function init() {
+  debugLog('init() called');
+
   if (document.getElementById('steam-balance-form')) {
+    debugLog('Form already exists, skipping');
     return;
   }
 
@@ -1469,9 +1523,11 @@ async function init() {
   const styleEl = document.createElement('style');
   styleEl.textContent = styles;
   document.head.appendChild(styleEl);
+  debugLog('Styles added');
 
   // Получаем информацию о Steam пользователе
   getSteamUserInfo();
+  debugLog(`Steam info: login=${state.steamLogin}, id=${state.steamId64}`);
 
   // Создаем контейнер для формы
   const formContainer = document.createElement('div');
@@ -1487,16 +1543,21 @@ async function init() {
     if (form) form.style.display = 'none';
 
     toggleBtn.addEventListener('click', async () => {
+      debugLog('Toggle button clicked');
       if (!form) return;
       const isHidden = form.style.display === 'none';
       form.style.display = isHidden ? 'block' : 'none';
+      debugLog(`Form visibility: ${isHidden ? 'shown' : 'hidden'}`);
 
       if (isHidden) {
         if (state.paymentMethods.length === 0) {
+          debugLog('Loading payment methods...');
           try {
             const methods = await fetchPaymentMethods();
+            debugLog(`Loaded ${methods.length} payment methods`);
             renderPaymentMethods(methods);
-          } catch (error) {
+          } catch (error: any) {
+            debugLog(`Failed to load methods: ${error.message}`, true);
             showNotification('Ошибка загрузки способов оплаты', 'error');
           }
         }
