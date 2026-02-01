@@ -1,0 +1,27 @@
+{
+  "name": "BattlePass - Пополнение Steam",
+  "description": "Пополняйте Steam баланс без комиссии через BattlePass. Для компьютерных клубов.",
+  "author": "BattlePass",
+  "version": "1.0.0",
+  "steam": true,
+  "useWebkit": true,
+  "webkitCSS": "styles.css",
+  "webkitJS": "webkit.js",
+  "patchFiles": [
+    {
+      "matchRegexString": ".*steampowered\\.com.*",
+      "targetJs": "webkit.js",
+      "targetCss": "styles.css"
+    },
+    {
+      "matchRegexString": ".*steamcommunity\\.com.*",
+      "targetJs": "webkit.js",
+      "targetCss": "styles.css"
+    },
+    {
+      "matchRegexString": ".*checkout\\.steampowered\\.com.*",
+      "targetJs": "webkit.js",
+      "targetCss": "styles.css"
+    }
+  ]
+}

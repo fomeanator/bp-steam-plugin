@@ -1,0 +1,778 @@
+/* BattlePass Steam Balance Helper - Millennium Plugin Styles */
+
+/* ============================================
+   CSS ПЕРЕМЕННЫЕ
+   ============================================ */
+:root {
+  --bp-back-color: #2b323c;
+  --bp-main-color: #334056;
+  --bp-bg-card-color: rgb(51 64 86 / 60%);
+  --bp-dark-color: #23282e;
+  --bp-text-color: #cfd4da;
+  --bp-white-color: #fff;
+  --bp-blue-color: #0396ff;
+  --bp-action-bg: var(--bp-blue-color);
+  --bp-action-text: var(--bp-white-color);
+  --bp-green-color: #48c432;
+  --bp-red-color: #eb4242;
+}
+
+/* ============================================
+   КНОПКА ОТКРЫТИЯ ФОРМЫ
+   ============================================ */
+.steam-balance-toggle-btn {
+  position: fixed;
+  top: 50px;
+  right: 20px;
+  z-index: 999999;
+  border-radius: 8px;
+  border: none;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: "Motiva Sans", Arial, sans-serif;
+  background: var(--bp-action-bg);
+  color: var(--bp-action-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: box-shadow 100ms ease-in-out;
+  will-change: box-shadow;
+}
+
+.steam-balance-toggle-btn > span {
+  display: block;
+}
+
+.steam-balance-toggle-btn:hover {
+  box-shadow: 0 0 10px var(--bp-action-bg);
+}
+
+/* ============================================
+   КОНТЕЙНЕР ФОРМЫ
+   ============================================ */
+.steam-balance-container {
+  position: fixed;
+  top: 110px;
+  right: 20px;
+  width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 999998;
+  background: var(--bp-main-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0px 12px 16px 0px rgba(0, 0, 0, 0.24);
+  font-family: "Motiva Sans", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.steam-balance-container.checkout-page {
+  position: relative;
+  width: 100%;
+  max-width: 940px;
+  margin: 0 auto 20px;
+  top: 32px;
+  right: 0;
+}
+
+/* ============================================
+   ЗАГОЛОВОК ФОРМЫ
+   ============================================ */
+.form-header {
+  background: var(--bp-dark-color);
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.form-header h3 {
+  margin: 0;
+  color: var(--bp-white-color);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--bp-text-color);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: var(--bp-white-color);
+}
+
+/* ============================================
+   СОДЕРЖИМОЕ ФОРМЫ
+   ============================================ */
+.form-content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.payment-methods h4,
+.amount-section h4 {
+  color: var(--bp-white-color);
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  text-transform: none;
+}
+
+/* ============================================
+   СЕКЦИЯ ЛОГИНА
+   ============================================ */
+.steam-login-section {
+  margin-bottom: 16px;
+}
+
+.steam-login-section h4 {
+  color: var(--bp-white-color);
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.login-hint {
+  display: block;
+  color: var(--bp-text-color);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ============================================
+   МЕТОДЫ ОПЛАТЫ
+   ============================================ */
+.methods-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.method-btn {
+  display: flex;
+  align-items: center;
+  background: var(--bp-dark-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--bp-text-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  font-family: "Motiva Sans", Arial, sans-serif;
+  text-align: left;
+}
+
+.method-btn:hover {
+  background: var(--bp-main-color);
+  border-color: var(--bp-blue-color);
+  color: var(--bp-white-color);
+}
+
+.method-btn.active {
+  background: var(--bp-blue-color);
+  border-color: var(--bp-blue-color);
+  color: var(--bp-white-color);
+}
+
+.method-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.method-name {
+  font-size: 12px;
+}
+
+.method-commission {
+  display: block;
+  font-size: 11px;
+  color: var(--bp-text-color);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.method-btn.active .method-commission {
+  color: var(--bp-white-color);
+}
+
+.loading-methods {
+  color: #8b929a;
+  text-align: center;
+  padding: 20px;
+  font-size: 13px;
+  grid-column: 1 / -1;
+}
+
+/* ============================================
+   СЕКЦИЯ ВАЛЮТЫ
+   ============================================ */
+.currency-section {
+  margin-bottom: 16px;
+}
+
+.currency-section h4 {
+  color: var(--bp-white-color);
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.currency-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.currency-btn {
+  flex: 1;
+  background: var(--bp-dark-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--bp-text-color);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-family: "Motiva Sans", Arial, sans-serif;
+}
+
+.currency-btn:hover {
+  background: var(--bp-main-color);
+  color: var(--bp-white-color);
+  border-color: var(--bp-blue-color);
+}
+
+.currency-btn.active {
+  background: var(--bp-blue-color);
+  border-color: var(--bp-blue-color);
+  color: var(--bp-white-color);
+}
+
+/* ============================================
+   СЕКЦИЯ СУММЫ
+   ============================================ */
+.amount-section {
+  margin-bottom: 12px;
+}
+
+.amount-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bp-dark-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--bp-white-color);
+  font-size: 14px;
+  font-weight: normal;
+  font-family: "Motiva Sans", Arial, sans-serif;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
+.amount-input:focus {
+  outline: none;
+  border-color: var(--bp-blue-color);
+  background: var(--bp-dark-color);
+}
+
+.amount-input.error {
+  border-color: #ff4444 !important;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.amount-input::placeholder {
+  color: var(--bp-text-color);
+  opacity: 0.6;
+}
+
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.amount-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.amount-hint {
+  display: block;
+  color: var(--bp-text-color);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.amount-error {
+  display: block;
+  font-size: 12px;
+  color: #ff4444;
+  margin-bottom: 4px;
+}
+
+/* ============================================
+   БЫСТРЫЕ СУММЫ
+   ============================================ */
+.quick-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.amount-btn {
+  background: var(--bp-dark-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--bp-text-color);
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: normal;
+  transition: all 0.2s ease;
+  font-family: "Motiva Sans", Arial, sans-serif;
+}
+
+.amount-btn:hover {
+  background: var(--bp-main-color);
+  color: var(--bp-white-color);
+  border-color: var(--bp-blue-color);
+}
+
+/* ============================================
+   ПРОМОКОД
+   ============================================ */
+.promocode-section {
+  margin-bottom: 16px;
+}
+
+.promocode-section h4 {
+  color: var(--bp-white-color);
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.promocode-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.promocode-input-wrapper input {
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.promocode-status {
+  position: absolute;
+  right: 12px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.promocode-status.checking {
+  color: var(--bp-text-color);
+}
+
+.promocode-status.valid {
+  color: var(--bp-green-color);
+}
+
+.promocode-status.invalid {
+  color: var(--bp-red-color);
+}
+
+.promocode-hint {
+  display: block;
+  color: var(--bp-text-color);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ============================================
+   ИНФОРМАЦИЯ О БАЛАНСЕ
+   ============================================ */
+.balance-info {
+  background: var(--bp-dark-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+  position: relative;
+  min-height: 80px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--bp-text-color);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 700;
+  color: var(--bp-white-color);
+}
+
+.total-row {
+  font-weight: 700;
+  color: var(--bp-white-color) !important;
+}
+
+.total-row span {
+  color: var(--bp-white-color) !important;
+}
+
+.discount-row .discount-value {
+  color: var(--bp-green-color);
+}
+
+/* ============================================
+   СПИННЕР
+   ============================================ */
+.balance-spinner {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: #c7d5e0;
+  font-size: 13px;
+  gap: 10px;
+  z-index: 1;
+  border-radius: 8px;
+}
+
+.balance-spinner .spinner-circle {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(103, 193, 245, 0.2);
+  border-top-color: #67c1f5;
+  border-radius: 50%;
+  animation: bp-spin 0.8s linear infinite;
+}
+
+@keyframes bp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.balance-content {
+  transition: opacity 0.15s ease;
+}
+
+/* ============================================
+   ЧЕКБОКС УСЛОВИЙ
+   ============================================ */
+.terms-checkbox {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bp-dark-color);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.terms-checkbox label {
+  display: flex;
+  align-items: flex-start;
+  color: var(--bp-text-color);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.terms-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  margin-top: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.terms-checkbox a {
+  color: var(--bp-blue-color);
+  text-decoration: underline;
+}
+
+.terms-checkbox a:hover {
+  color: var(--bp-white-color);
+}
+
+/* ============================================
+   ССЫЛКА НА ПОДДЕРЖКУ
+   ============================================ */
+.support-link-section {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.support-link-section small {
+  color: var(--bp-text-color);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.support-link-section .support-link {
+  color: var(--bp-blue-color);
+  text-decoration: underline;
+}
+
+.support-link-section .support-link:hover {
+  color: var(--bp-white-color);
+}
+
+/* ============================================
+   КНОПКА ОПЛАТЫ
+   ============================================ */
+.pay-button {
+  width: 100%;
+  border-radius: 8px;
+  border: none;
+  padding: 8px 16px;
+  display: inline-block;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: "Motiva Sans", Arial, sans-serif;
+  background: var(--bp-action-bg);
+  color: var(--bp-action-text);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 30px;
+  text-transform: none;
+  transition: box-shadow 100ms ease-in-out;
+  will-change: box-shadow;
+}
+
+.pay-button > span {
+  display: block;
+}
+
+.pay-button:hover:not(:disabled) {
+  box-shadow: 0 0 10px var(--bp-action-bg);
+}
+
+.pay-button:disabled {
+  background: rgba(0, 0, 0, 0.2);
+  color: #8b929a;
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* ============================================
+   ПРИМЕЧАНИЕ
+   ============================================ */
+.payment-note {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.payment-note small {
+  color: #8b929a;
+  font-size: 11px;
+}
+
+/* ============================================
+   УВЕДОМЛЕНИЯ
+   ============================================ */
+.bp-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999999;
+  padding: 14px 24px;
+  border-radius: 8px;
+  box-shadow: 0px 12px 16px 0px rgba(0,0,0,0.24);
+  font-family: "Motiva Sans", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  animation: bp-slideDown 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bp-notification-info {
+  background: var(--bp-blue-color);
+  color: var(--bp-white-color);
+}
+
+.bp-notification-error {
+  background: var(--bp-red-color);
+  color: var(--bp-white-color);
+}
+
+.bp-notification-link {
+  color: var(--bp-white-color);
+  text-decoration: underline;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.bp-notification-hide {
+  animation: bp-slideUp 0.3s ease-in;
+}
+
+@keyframes bp-slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes bp-slideUp {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+}
+
+/* ============================================
+   КНОПКА ПОПОЛНЕНИЯ В КОРЗИНЕ
+   ============================================ */
+.bp-topup-btn {
+  margin-top: 8px;
+  background: var(--bp-action-bg);
+  color: var(--bp-action-text);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: box-shadow 100ms ease-in-out;
+  border: none;
+  font-family: "Motiva Sans", Arial, sans-serif;
+  cursor: pointer;
+  width: 100%;
+}
+
+.bp-topup-btn:hover {
+  box-shadow: 0 0 10px var(--bp-action-bg);
+}
+
+/* ============================================
+   СКРОЛЛБАР
+   ============================================ */
+.steam-balance-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.steam-balance-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.steam-balance-container::-webkit-scrollbar-thumb {
+  background: rgba(103, 193, 245, 0.3);
+  border-radius: 4px;
+}
+
+.steam-balance-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(103, 193, 245, 0.5);
+}
+
+/* ============================================
+   АНИМАЦИЯ ПОЯВЛЕНИЯ
+   ============================================ */
+@keyframes bp-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.steam-balance-container:not(.checkout-page) {
+  animation: bp-fadeIn 0.2s ease-out;
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+@media (max-width: 768px) {
+  .steam-balance-container:not(.checkout-page) {
+    width: calc(100% - 40px);
+    right: 20px;
+    left: 20px;
+    top: 70px;
+  }
+
+  .steam-balance-toggle-btn {
+    right: 20px;
+    top: 10px;
+  }
+
+  .methods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-amounts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+button:focus,
+input:focus {
+  outline: none;
+}
