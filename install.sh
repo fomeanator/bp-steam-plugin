@@ -58,6 +58,60 @@ detect_os() {
     print_step "Обнаружена ОС: $OS"
 }
 
+# Установка зависимостей
+install_dependencies() {
+    # Проверяем jq
+    if ! command -v jq &> /dev/null; then
+        print_info "Установка jq..."
+        case "$OS" in
+            macOS)
+                if command -v brew &> /dev/null; then
+                    brew install jq
+                else
+                    print_info "Установка Homebrew..."
+                    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                    brew install jq
+                fi
+                ;;
+            Linux)
+                if command -v apt-get &> /dev/null; then
+                    sudo apt-get update && sudo apt-get install -y jq
+                elif command -v dnf &> /dev/null; then
+                    sudo dnf install -y jq
+                elif command -v pacman &> /dev/null; then
+                    sudo pacman -S --noconfirm jq
+                elif command -v apk &> /dev/null; then
+                    sudo apk add jq
+                else
+                    print_error "Не удалось установить jq. Установите вручную."
+                    exit 1
+                fi
+                ;;
+        esac
+        print_step "jq установлен"
+    fi
+
+    # Проверяем unzip
+    if ! command -v unzip &> /dev/null; then
+        print_info "Установка unzip..."
+        case "$OS" in
+            macOS)
+                brew install unzip
+                ;;
+            Linux)
+                if command -v apt-get &> /dev/null; then
+                    sudo apt-get install -y unzip
+                elif command -v dnf &> /dev/null; then
+                    sudo dnf install -y unzip
+                elif command -v pacman &> /dev/null; then
+                    sudo pacman -S --noconfirm unzip
+                fi
+                ;;
+        esac
+        print_step "unzip установлен"
+    fi
+}
+
 # Проверяем наличие Millennium
 check_millennium() {
     if [ -d "$PLUGINS_DIR" ] || [ -d "$(dirname "$PLUGINS_DIR")" ]; then
@@ -135,6 +189,7 @@ print_success() {
 main() {
     print_banner
     detect_os
+    install_dependencies
     check_millennium
     install_plugin
     print_success
