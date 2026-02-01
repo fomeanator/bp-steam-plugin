@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
-  "name": "battlepass-steam",
-  "common_name": "BattlePass - Пополнение Steam",
-  "description": "Пополнение баланса Steam через BattlePass",
+  "name": "battlepass-test",
+  "common_name": "BattlePass Test",
+  "description": "Test plugin",
   "version": "1.0.0"
 }

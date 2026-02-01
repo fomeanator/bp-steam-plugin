@@ -1,5 +1,5 @@
 const MILLENNIUM_IS_CLIENT_MODULE = true;
-const pluginName = "battlepass-steam";
+const pluginName = "battlepass-test";
 function InitializePlugins() {
     var _a, _b;
     /**
@@ -122,9 +122,8 @@ function __wrapped_callable__(route) {
 let PluginEntryPointMain = function() { var millennium_main = (function (exports) {
     'use strict';
 
-    // Минимальный тест - просто лог
     async function PluginMain() {
-        console.log('[BattlePass] Frontend loaded');
+        console.log('test');
     }
 
     exports.default = PluginMain;
