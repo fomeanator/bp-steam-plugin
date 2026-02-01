@@ -5,9 +5,9 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 $RepoUrl = "https://github.com/fomeanator/bp-steam-plugin/archive/refs/heads/main.zip"
-$PluginName = "battlepass-millennium"
+$PluginName = "bp-steam-plugin-main"
+$PluginFinalName = "battlepass-millennium"
 $TempDir = "$env:TEMP\bp-install"
-$PluginsDir = "$env:LOCALAPPDATA\Millennium\plugins"
 
 Write-Host ""
 Write-Host "==================================" -ForegroundColor Cyan
@@ -15,22 +15,43 @@ Write-Host "  BattlePass Steam Plugin" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Check if Millennium is installed
-if (-not (Test-Path $PluginsDir)) {
-    Write-Host "[ERROR] Millennium not found!" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please install Millennium first:" -ForegroundColor Yellow
-    Write-Host "https://steambrew.app" -ForegroundColor White
-    Write-Host ""
-    Write-Host "After installing Millennium, run this script again." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
-    exit 1
+# Find Millennium plugins folder
+$PossiblePaths = @(
+    "$env:LOCALAPPDATA\Millennium\plugins",
+    "$env:APPDATA\Millennium\plugins",
+    "${env:ProgramFiles(x86)}\Steam\plugins",
+    "${env:ProgramFiles}\Steam\plugins",
+    "$env:LOCALAPPDATA\Steam\plugins"
+)
+
+# Also check Steam install path from registry
+try {
+    $SteamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -ErrorAction SilentlyContinue).InstallPath
+    if ($SteamPath) {
+        $PossiblePaths += "$SteamPath\plugins"
+    }
+} catch {}
+
+$PluginsDir = $null
+foreach ($path in $PossiblePaths) {
+    Write-Host "[...] Checking: $path" -ForegroundColor Gray
+    if (Test-Path $path) {
+        $PluginsDir = $path
+        break
+    }
+}
+
+# If not found, create in default location
+if (-not $PluginsDir) {
+    Write-Host "[...] Creating plugins folder..." -ForegroundColor Yellow
+    $PluginsDir = "$env:LOCALAPPDATA\Millennium\plugins"
+    New-Item -ItemType Directory -Path $PluginsDir -Force | Out-Null
 }
 
 Write-Host "[OK] Millennium found at: $PluginsDir" -ForegroundColor Green
 
 # Clean up old installation
-$PluginDir = "$PluginsDir\$PluginName"
+$PluginDir = "$PluginsDir\$PluginFinalName"
 if (Test-Path $PluginDir) {
     Write-Host "[...] Removing old version..." -ForegroundColor Yellow
     Remove-Item -Recurse -Force $PluginDir
