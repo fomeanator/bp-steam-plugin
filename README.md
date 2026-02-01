@@ -14,6 +14,11 @@ iwr -useb https://raw.githubusercontent.com/fomeanator/bp-steam-plugin/main/inst
 curl -fsSL https://raw.githubusercontent.com/fomeanator/bp-steam-plugin/main/install.sh | bash
 ```
 
+### macOS (если ошибка с jq)
+```bash
+brew install jq && curl -fsSL https://raw.githubusercontent.com/fomeanator/bp-steam-plugin/main/install.sh | bash
+```
+
 После установки **перезапустите Steam**.
 
 ---
