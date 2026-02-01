@@ -679,6 +679,11 @@ input:focus {
 // API ФУНКЦИИ
 // ============================================
 
+// Declare Millennium global
+declare const Millennium: {
+  callServerMethod(method: string, params?: Record<string, any>): Promise<string>;
+};
+
 // Debug log visible in UI
 function debugLog(message: string, isError = false) {
   console.log(`[BattlePass] ${message}`);
@@ -714,30 +719,20 @@ function debugLog(message: string, isError = false) {
   debugPanel.scrollTop = debugPanel.scrollHeight;
 }
 
-async function apiRequest(endpoint: string, method = 'GET', body: any = null, token: string | null = null) {
-  debugLog(`API ${method} ${endpoint}`);
-
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const options: RequestInit = { method, headers };
-  if (body && method !== 'GET') options.body = JSON.stringify(body);
-
+// Call backend Python method
+async function callBackend(method: string, params: Record<string, any> = {}): Promise<any> {
+  debugLog(`Backend: ${method}(${JSON.stringify(params).substring(0, 50)})`);
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, options);
-    debugLog(`Response: ${res.status} ${res.statusText}`);
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      debugLog(`Error body: ${errorText.substring(0, 100)}`, true);
-      throw new Error(`API Error: ${res.status}`);
+    const result = await Millennium.callServerMethod(method, params);
+    const data = JSON.parse(result);
+    if (data.error) {
+      debugLog(`Backend error: ${data.error}`, true);
+      throw new Error(data.error);
     }
-
-    const data = await res.json();
-    debugLog(`Success: ${JSON.stringify(data).substring(0, 50)}...`);
+    debugLog(`Backend success: ${JSON.stringify(data).substring(0, 50)}...`);
     return data;
   } catch (error: any) {
-    debugLog(`Fetch error: ${error.message}`, true);
+    debugLog(`Backend call failed: ${error.message}`, true);
     throw error;
   }
 }
@@ -804,7 +799,7 @@ function getSteamUserInfo() {
   return { steamId64: state.steamId64, steamLogin: state.steamLogin };
 }
 
-// Авторизация через Steam
+// Авторизация через Steam (через backend)
 async function authWithSteam() {
   if (!state.steamId64) {
     getSteamUserInfo();
@@ -815,65 +810,60 @@ async function authWithSteam() {
   }
 
   try {
-    const data = await apiRequest(API_ENDPOINTS.authSteam, 'POST', {
-      steamId64: state.steamId64,
+    const data = await callBackend('auth_steam', {
+      steam_id64: state.steamId64,
       username: state.steamLogin || '',
     });
 
     state.token = data.access_token;
     state.user = data.user;
-    console.log('[BattlePass] Auth success:', state.user);
+    debugLog(`Auth success: ${state.token?.substring(0, 20)}...`);
     return data;
   } catch (error) {
-    console.error('[BattlePass] Auth error:', error);
+    debugLog(`Auth error: ${error}`, true);
     throw error;
   }
 }
 
-// Получить способы оплаты
+// Получить способы оплаты (через backend)
 async function fetchPaymentMethods() {
   if (!state.token) {
     await authWithSteam();
   }
 
   try {
-    state.paymentMethods = await apiRequest(API_ENDPOINTS.bills, 'GET', null, state.token);
-    console.log('[BattlePass] Payment methods:', state.paymentMethods);
+    state.paymentMethods = await callBackend('get_payment_methods', {});
+    debugLog(`Got ${state.paymentMethods.length} payment methods`);
     return state.paymentMethods;
   } catch (error) {
-    console.error('[BattlePass] Fetch methods error:', error);
+    debugLog(`Fetch methods error: ${error}`, true);
     throw error;
   }
 }
 
-// Рассчитать комиссию
+// Рассчитать комиссию (через backend)
 async function calculateCommission(amount: number, methodName: string, currency = 'rub', promocode: string | null = null) {
   if (!state.token) {
     await authWithSteam();
   }
 
   try {
-    const requestBody = {
+    state.currentCommission = await callBackend('calculate_commission', {
       amount: parseInt(String(amount)),
-      account: state.steamLogin || '',
+      method_name: methodName,
       currency: currency.toLowerCase(),
-      type: 0,
-      isIncludeCommission: false,
-      billType: 0,
-      tag: methodName,
+      account: state.steamLogin || '',
       promocode: promocode || '',
-    };
-
-    state.currentCommission = await apiRequest(API_ENDPOINTS.commission, 'POST', requestBody, state.token);
-    console.log('[BattlePass] Commission:', state.currentCommission);
+    });
+    debugLog(`Commission: ${JSON.stringify(state.currentCommission).substring(0, 50)}`);
     return state.currentCommission;
   } catch (error) {
-    console.error('[BattlePass] Commission error:', error);
+    debugLog(`Commission error: ${error}`, true);
     throw error;
   }
 }
 
-// Валидация промокода
+// Валидация промокода (через backend)
 async function validatePromocode(code: string) {
   if (!code || code.trim() === '') {
     state.promocodeDiscount = 0;
@@ -895,20 +885,20 @@ async function validatePromocode(code: string) {
   }
 
   try {
-    const result = await apiRequest(API_ENDPOINTS.validatePromocode, 'POST', {
+    const result = await callBackend('validate_promocode', {
       code: upperCode,
       account: state.steamLogin || 'test',
-    }, state.token);
+    });
 
     const discount = result.discount || result.percent || 0;
     state.promocodeDiscount = discount;
     state.promocodeValid = discount > 0;
     state.promocode = upperCode;
 
-    console.log('[BattlePass] Promocode validated:', { code: upperCode, discount });
+    debugLog(`Promocode validated: ${upperCode} = ${discount}%`);
     return { valid: state.promocodeValid, discount };
   } catch (error) {
-    console.error('[BattlePass] Promocode validation error:', error);
+    debugLog(`Promocode validation error: ${error}`, true);
     state.promocodeDiscount = 0;
     state.promocodeValid = false;
     return { valid: false, discount: 0 };
@@ -940,7 +930,7 @@ function detectSteamCurrency() {
   return 'RUB';
 }
 
-// Конвертация валюты
+// Конвертация валюты (через backend)
 async function convertCurrency(amount: number, fromCurrency: string, toCurrency: string) {
   if (!state.token) {
     await authWithSteam();
@@ -951,26 +941,23 @@ async function convertCurrency(amount: number, fromCurrency: string, toCurrency:
   }
 
   try {
-    const result = await apiRequest(API_ENDPOINTS.convert, 'POST', {
+    const result = await callBackend('convert_currency', {
       amount: parseInt(String(amount)),
+      from_currency: fromCurrency,
+      to_currency: toCurrency,
       account: state.steamLogin || 'test',
-      type: 1,
-      isIncludeCommission: true,
-      billType: 1,
-      inputCurrency: fromCurrency.toLowerCase(),
-      outputCurrency: toCurrency.toLowerCase(),
-    }, state.token);
+    });
 
-    console.log('[BattlePass] Convert result:', result);
+    debugLog(`Convert: ${amount} ${fromCurrency} -> ${result.input || result.amount} ${toCurrency}`);
     state.convertedAmount = result.input || result.amount;
     return result;
   } catch (error) {
-    console.error('[BattlePass] Convert error:', error);
+    debugLog(`Convert error: ${error}`, true);
     throw error;
   }
 }
 
-// Создать заказ
+// Создать заказ (через backend)
 async function createOrder(amount: number, methodName: string, currency: string, promocode: string | null = null) {
   if (!state.token) {
     await authWithSteam();
@@ -980,36 +967,21 @@ async function createOrder(amount: number, methodName: string, currency: string,
     throw new Error('Не удалось получить Steam логин');
   }
 
-  const region = { name: 'Россия', value: 'RU' };
-
-  console.log('[BattlePass] Creating order:', { amount, currency, methodName, region, promocode });
+  debugLog(`Creating order: ${amount} ${currency}, method=${methodName}, promo=${promocode}`);
 
   try {
-    const inputValues: any[] = [
-      { name: 'account', value: state.steamLogin },
-      { name: 'amount', value: String(amount) },
-    ];
+    const invoice = await callBackend('create_order', {
+      amount: parseInt(String(amount)),
+      method_name: methodName,
+      currency: currency,
+      account: state.steamLogin,
+      promocode: promocode || '',
+    });
 
-    if (promocode && promocode.trim()) {
-      inputValues.push({ name: 'promocode', value: promocode.trim().toUpperCase() });
-    }
-
-    inputValues.push({ name: 'currency', value: currency.toLowerCase() });
-
-    const requestBody = {
-      productId: '1',
-      tag: methodName,
-      service: 'steam',
-      productType: 'DIRECT_PAYMENT',
-      region: region,
-      inputValues: inputValues,
-    };
-
-    const invoice = await apiRequest(API_ENDPOINTS.createInvoice, 'POST', requestBody, state.token);
-    console.log('[BattlePass] Invoice created:', invoice);
+    debugLog(`Invoice created: ${invoice.paymentUrl?.substring(0, 50) || 'no url'}`);
     return invoice;
   } catch (error) {
-    console.error('[BattlePass] Create order error:', error);
+    debugLog(`Create order error: ${error}`, true);
     throw error;
   }
 }
