@@ -1,127 +1,88 @@
-# BattlePass Steam Plugin - Windows Installer
-# Использование: iwr -useb https://raw.githubusercontent.com/fomeanator/bp-steam-plugin/main/install.ps1 | iex
+# BattlePass Steam Plugin - Installation Script for Windows
+# Requires: Millennium must be already installed (https://steambrew.app)
 
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 
-$REPO = "fomeanator/bp-steam-plugin"
-$PLUGIN_NAME = "battlepass-millennium"
-$PLUGINS_DIR = "$env:LOCALAPPDATA\Millennium\plugins"
+$RepoUrl = "https://github.com/fomeanator/bp-steam-plugin/archive/refs/heads/main.zip"
+$PluginName = "battlepass-millennium"
+$TempDir = "$env:TEMP\bp-install"
+$PluginsDir = "$env:LOCALAPPDATA\Millennium\plugins"
 
-function Write-Banner {
+Write-Host ""
+Write-Host "==================================" -ForegroundColor Cyan
+Write-Host "  BattlePass Steam Plugin" -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if Millennium is installed
+if (-not (Test-Path $PluginsDir)) {
+    Write-Host "[ERROR] Millennium not found!" -ForegroundColor Red
     Write-Host ""
-    Write-Host "=========================================" -ForegroundColor Cyan
-    Write-Host "   BattlePass Steam Plugin Installer    " -ForegroundColor Cyan
-    Write-Host "      Пополнение Steam баланса          " -ForegroundColor Cyan
-    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host "Please install Millennium first:" -ForegroundColor Yellow
+    Write-Host "https://steambrew.app" -ForegroundColor White
     Write-Host ""
+    Write-Host "After installing Millennium, run this script again." -ForegroundColor Yellow
+    Read-Host "Press Enter to exit"
+    exit 1
 }
 
-function Write-Step {
-    param([string]$Message)
-    Write-Host "[OK] " -ForegroundColor Green -NoNewline
-    Write-Host $Message
+Write-Host "[OK] Millennium found at: $PluginsDir" -ForegroundColor Green
+
+# Clean up old installation
+$PluginDir = "$PluginsDir\$PluginName"
+if (Test-Path $PluginDir) {
+    Write-Host "[...] Removing old version..." -ForegroundColor Yellow
+    Remove-Item -Recurse -Force $PluginDir
 }
 
-function Write-Info {
-    param([string]$Message)
-    Write-Host "[i] " -ForegroundColor Yellow -NoNewline
-    Write-Host $Message
+# Create temp directory
+if (Test-Path $TempDir) {
+    Remove-Item -Recurse -Force $TempDir
+}
+New-Item -ItemType Directory -Path $TempDir | Out-Null
+
+# Download plugin
+Write-Host "[...] Downloading plugin..." -ForegroundColor Yellow
+$ZipPath = "$TempDir\plugin.zip"
+
+try {
+    Invoke-WebRequest -Uri $RepoUrl -OutFile $ZipPath -UseBasicParsing
+} catch {
+    Write-Host "[ERROR] Failed to download plugin!" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
 }
 
-function Write-Err {
-    param([string]$Message)
-    Write-Host "[X] " -ForegroundColor Red -NoNewline
-    Write-Host $Message
+# Extract
+Write-Host "[...] Extracting..." -ForegroundColor Yellow
+Expand-Archive -Path $ZipPath -DestinationPath $TempDir -Force
+
+# Find extracted folder and move to plugins
+$ExtractedDir = Get-ChildItem -Path $TempDir -Directory | Where-Object { $_.Name -like "*battlepass*" -or $_.Name -like "*main*" } | Select-Object -First 1
+if ($ExtractedDir) {
+    Move-Item -Path $ExtractedDir.FullName -Destination $PluginDir
+} else {
+    Write-Host "[ERROR] Could not find plugin files in archive!" -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
 }
 
-function Test-Millennium {
-    if (Test-Path "$env:LOCALAPPDATA\Millennium") {
-        Write-Step "Millennium обнаружен"
-        return $true
-    }
-    return $false
-}
+# Clean up
+Remove-Item -Recurse -Force $TempDir
 
-function Install-Millennium {
-    Write-Info "Millennium не установлен. Устанавливаем..."
-    try {
-        iwr -useb "https://steambrew.app/install.ps1" | iex
-        Write-Step "Millennium установлен"
-    }
-    catch {
-        Write-Err "Ошибка установки Millennium: $_"
-        exit 1
-    }
-}
-
-function Install-Plugin {
-    Write-Info "Скачивание плагина BattlePass..."
-
-    # Создаём папку плагинов
-    if (-not (Test-Path $PLUGINS_DIR)) {
-        New-Item -ItemType Directory -Path $PLUGINS_DIR -Force | Out-Null
-    }
-
-    $PLUGIN_DIR = "$PLUGINS_DIR\$PLUGIN_NAME"
-
-    # Удаляем старую версию
-    if (Test-Path $PLUGIN_DIR) {
-        Write-Info "Удаление старой версии..."
-        Remove-Item -Path $PLUGIN_DIR -Recurse -Force
-    }
-
-    # Скачиваем архив
-    $TEMP_DIR = [System.IO.Path]::GetTempPath()
-    $ZIP_PATH = "$TEMP_DIR\bp-plugin.zip"
-    $EXTRACT_PATH = "$TEMP_DIR\bp-plugin-extract"
-
-    try {
-        Write-Info "Загрузка..."
-        Invoke-WebRequest -Uri "https://github.com/$REPO/archive/refs/heads/main.zip" -OutFile $ZIP_PATH
-
-        Write-Info "Распаковка..."
-        if (Test-Path $EXTRACT_PATH) {
-            Remove-Item -Path $EXTRACT_PATH -Recurse -Force
-        }
-        Expand-Archive -Path $ZIP_PATH -DestinationPath $EXTRACT_PATH -Force
-
-        # Перемещаем в папку плагинов
-        Move-Item -Path "$EXTRACT_PATH\bp-steam-plugin-main" -Destination $PLUGIN_DIR -Force
-
-        # Очистка
-        Remove-Item -Path $ZIP_PATH -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path $EXTRACT_PATH -Recurse -Force -ErrorAction SilentlyContinue
-
-        Write-Step "Плагин установлен в: $PLUGIN_DIR"
-    }
-    catch {
-        Write-Err "Ошибка установки: $_"
-        exit 1
-    }
-}
-
-function Write-Success {
-    Write-Host ""
-    Write-Host "=========================================" -ForegroundColor Green
-    Write-Host "        Установка завершена!            " -ForegroundColor Green
-    Write-Host "=========================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "Следующие шаги:" -ForegroundColor Yellow
-    Write-Host "1. Перезапустите Steam"
-    Write-Host "2. Откройте Steam Store (store.steampowered.com)"
-    Write-Host "3. Нажмите кнопку 'Пополнить Steam' в правом верхнем углу"
-    Write-Host ""
-    Write-Host "Поддержка: " -NoNewline
-    Write-Host "https://t.me/BattlePassSupportBot" -ForegroundColor Cyan
-    Write-Host ""
-}
-
-# Main
-Write-Banner
-
-if (-not (Test-Millennium)) {
-    Install-Millennium
-}
-
-Install-Plugin
-Write-Success
+Write-Host ""
+Write-Host "==================================" -ForegroundColor Green
+Write-Host "  Installation complete!" -ForegroundColor Green
+Write-Host "==================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Yellow
+Write-Host "1. Restart Steam" -ForegroundColor White
+Write-Host "2. Go to Settings -> Millennium -> Plugins" -ForegroundColor White
+Write-Host "3. Enable 'BattlePass' plugin" -ForegroundColor White
+Write-Host "4. Go to Store and enjoy!" -ForegroundColor White
+Write-Host ""
+Write-Host "Support: https://t.me/BattlePassSupportBot" -ForegroundColor Cyan
+Write-Host ""
+Read-Host "Press Enter to exit"

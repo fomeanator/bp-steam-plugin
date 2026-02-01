@@ -678,22 +678,31 @@
    КНОПКА ПОПОЛНЕНИЯ В КОРЗИНЕ
    ============================================ */
 .bp-topup-btn {
+  display: block;
   margin-top: 8px;
   background: var(--bp-action-bg);
   color: var(--bp-action-text);
   border-radius: 8px;
   padding: 12px 16px;
   font-weight: 600;
+  font-size: 14px;
   text-transform: uppercase;
-  transition: box-shadow 100ms ease-in-out;
+  text-align: center;
+  transition: box-shadow 100ms ease-in-out, background-color 100ms ease-in-out;
   border: none;
   font-family: "Motiva Sans", Arial, sans-serif;
   cursor: pointer;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .bp-topup-btn:hover {
   box-shadow: 0 0 10px var(--bp-action-bg);
+  background: #0aa8ff;
+}
+
+.bp-topup-btn:active {
+  background: #007acc;
 }
 
 /* ============================================

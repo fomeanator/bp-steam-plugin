@@ -2,12 +2,272 @@
 // Адаптированная версия для Steam Desktop Client
 // ============================================
 
+// ТЕСТ: Визуальный индикатор что скрипт загрузился
+(function() {
+  const testDiv = document.createElement('div');
+  testDiv.id = 'bp-load-indicator';
+  testDiv.style.cssText = `
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: #00ff00;
+    color: #000;
+    padding: 10px 20px;
+    z-index: 99999999;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+  `;
+  testDiv.textContent = '✓ BattlePass LOADED! URL: ' + window.location.href.substring(0, 50);
+
+  if (document.body) {
+    document.body.appendChild(testDiv);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.appendChild(testDiv);
+    });
+  }
+
+  // Убираем через 10 секунд
+  setTimeout(() => {
+    const el = document.getElementById('bp-load-indicator');
+    if (el) el.remove();
+  }, 10000);
+})();
+
 (function() {
   'use strict';
 
   // Проверяем, не инициализирован ли уже плагин
   if (window.__battlepassInitialized) return;
   window.__battlepassInitialized = true;
+
+  // ============================================
+  // КАСТОМНАЯ КОНСОЛЬ ДЛЯ ОТЛАДКИ
+  // ============================================
+  function createDebugConsole() {
+    if (document.getElementById('bp-debug-console')) return;
+
+    const consoleHTML = `
+      <div id="bp-debug-console" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 200px;
+        background: rgba(0, 0, 0, 0.95);
+        border-top: 2px solid #0396ff;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 12px;
+        z-index: 9999999;
+        display: flex;
+        flex-direction: column;
+      ">
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 8px;
+          background: #1a1a2e;
+          border-bottom: 1px solid #333;
+        ">
+          <span style="color: #0396ff; font-weight: bold;">🔧 BattlePass Debug Console</span>
+          <div>
+            <button id="bp-console-clear" style="
+              background: #333;
+              color: #fff;
+              border: none;
+              padding: 2px 8px;
+              margin-right: 4px;
+              cursor: pointer;
+              border-radius: 3px;
+            ">Clear</button>
+            <button id="bp-console-toggle" style="
+              background: #333;
+              color: #fff;
+              border: none;
+              padding: 2px 8px;
+              cursor: pointer;
+              border-radius: 3px;
+            ">_</button>
+            <button id="bp-console-close" style="
+              background: #eb4242;
+              color: #fff;
+              border: none;
+              padding: 2px 8px;
+              margin-left: 4px;
+              cursor: pointer;
+              border-radius: 3px;
+            ">✕</button>
+          </div>
+        </div>
+        <div id="bp-console-output" style="
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px;
+          color: #ccc;
+        "></div>
+        <div style="
+          display: flex;
+          border-top: 1px solid #333;
+        ">
+          <span style="color: #0396ff; padding: 8px;">›</span>
+          <input id="bp-console-input" type="text" placeholder="Введите JS код и нажмите Enter..." style="
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            outline: none;
+          ">
+        </div>
+      </div>
+    `;
+
+    const container = document.createElement('div');
+    container.innerHTML = consoleHTML;
+    document.body.appendChild(container.firstElementChild);
+
+    const output = document.getElementById('bp-console-output');
+    const input = document.getElementById('bp-console-input');
+    const consoleEl = document.getElementById('bp-debug-console');
+
+    // Функция вывода в консоль
+    window.__bpLog = function(type, ...args) {
+      const colors = {
+        log: '#ccc',
+        info: '#0396ff',
+        warn: '#ffa500',
+        error: '#eb4242',
+        debug: '#888'
+      };
+      const time = new Date().toLocaleTimeString();
+      const text = args.map(a => {
+        if (typeof a === 'object') {
+          try { return JSON.stringify(a, null, 2); }
+          catch { return String(a); }
+        }
+        return String(a);
+      }).join(' ');
+
+      const line = document.createElement('div');
+      line.style.cssText = `
+        color: ${colors[type] || '#ccc'};
+        margin-bottom: 4px;
+        word-break: break-all;
+        white-space: pre-wrap;
+      `;
+      line.innerHTML = `<span style="color: #666;">[${time}]</span> <span style="color: ${colors[type]};">[${type.toUpperCase()}]</span> ${escapeHtml(text)}`;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    };
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Перехват console
+    const originalConsole = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug
+    };
+
+    console.log = function(...args) {
+      originalConsole.log.apply(console, args);
+      window.__bpLog('log', ...args);
+    };
+    console.info = function(...args) {
+      originalConsole.info.apply(console, args);
+      window.__bpLog('info', ...args);
+    };
+    console.warn = function(...args) {
+      originalConsole.warn.apply(console, args);
+      window.__bpLog('warn', ...args);
+    };
+    console.error = function(...args) {
+      originalConsole.error.apply(console, args);
+      window.__bpLog('error', ...args);
+    };
+    console.debug = function(...args) {
+      originalConsole.debug.apply(console, args);
+      window.__bpLog('debug', ...args);
+    };
+
+    // Перехват ошибок
+    window.addEventListener('error', (e) => {
+      window.__bpLog('error', `Uncaught Error: ${e.message} at ${e.filename}:${e.lineno}`);
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      window.__bpLog('error', `Unhandled Promise Rejection: ${e.reason}`);
+    });
+
+    // Выполнение JS кода
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const code = input.value.trim();
+        if (!code) return;
+
+        window.__bpLog('info', `> ${code}`);
+        try {
+          const result = eval(code);
+          window.__bpLog('log', result);
+        } catch (err) {
+          window.__bpLog('error', err.message);
+        }
+        input.value = '';
+      }
+    });
+
+    // Кнопки управления
+    document.getElementById('bp-console-clear').addEventListener('click', () => {
+      output.innerHTML = '';
+    });
+
+    let minimized = false;
+    document.getElementById('bp-console-toggle').addEventListener('click', () => {
+      minimized = !minimized;
+      consoleEl.style.height = minimized ? '30px' : '200px';
+      output.style.display = minimized ? 'none' : 'block';
+      input.parentElement.style.display = minimized ? 'none' : 'flex';
+    });
+
+    document.getElementById('bp-console-close').addEventListener('click', () => {
+      consoleEl.style.display = 'none';
+    });
+
+    // Начальное сообщение
+    window.__bpLog('info', 'BattlePass Debug Console initialized');
+    window.__bpLog('info', `Current URL: ${window.location.href}`);
+    window.__bpLog('info', `Document ready state: ${document.readyState}`);
+    window.__bpLog('info', 'Press Ctrl+Shift+D to toggle console');
+
+    // Горячая клавиша Ctrl+Shift+D для показа/скрытия консоли
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        const consoleEl = document.getElementById('bp-debug-console');
+        if (consoleEl) {
+          consoleEl.style.display = consoleEl.style.display === 'none' ? 'flex' : 'none';
+        }
+      }
+    });
+  }
+
+  // Создаём консоль сразу
+  if (document.body) {
+    createDebugConsole();
+  } else {
+    document.addEventListener('DOMContentLoaded', createDebugConsole);
+  }
 
   // ============================================
   // КОНФИГУРАЦИЯ
@@ -109,12 +369,24 @@
     convertedAmount: null,
   };
 
-  // Проверяем тип страницы
-  const isCheckoutPage = window.location.href.includes('checkout.steampowered.com');
-  const isCartPage = window.location.href.includes('store.steampowered.com/cart');
-  const isAppPage = window.location.href.includes('store.steampowered.com/app/');
-  const isBundlePage = window.location.href.includes('store.steampowered.com/bundle/');
-  const isAddFundsPage = window.location.href.includes('store.steampowered.com/steamaccount/addfunds');
+  // Проверяем тип страницы (учитываем разные форматы URL в Steam Desktop Client)
+  const currentUrl = window.location.href;
+  const isCheckoutPage = currentUrl.includes('checkout.steampowered.com') || currentUrl.includes('/checkout');
+  const isCartPage = currentUrl.includes('store.steampowered.com/cart') || currentUrl.includes('/cart') || currentUrl.endsWith('/cart');
+  const isAppPage = currentUrl.includes('store.steampowered.com/app/') || currentUrl.includes('/app/');
+  const isBundlePage = currentUrl.includes('store.steampowered.com/bundle/') || currentUrl.includes('/bundle/');
+  const isAddFundsPage = currentUrl.includes('store.steampowered.com/steamaccount/addfunds') || currentUrl.includes('/steamaccount/addfunds');
+  const isSteamPage = currentUrl.includes('steampowered.com') || currentUrl.includes('steamcommunity.com') || currentUrl.includes('localhost');
+
+  console.log('[BattlePass] Page detection:', {
+    currentUrl,
+    isCheckoutPage,
+    isCartPage,
+    isAppPage,
+    isBundlePage,
+    isAddFundsPage,
+    isSteamPage
+  });
 
   // ============================================
   // STEAM USER INFO
@@ -909,13 +1181,29 @@
   // ИНИЦИАЛИЗАЦИЯ
   // ============================================
   async function init() {
-    if (document.getElementById('steam-balance-form')) return;
+    console.log('[BattlePass] Init started');
+    console.log('[BattlePass] document.body exists:', !!document.body);
+    console.log('[BattlePass] document.readyState:', document.readyState);
 
+    if (document.getElementById('steam-balance-form')) {
+      console.log('[BattlePass] Form already exists, skipping init');
+      return;
+    }
+
+    console.log('[BattlePass] Getting Steam user info...');
     getSteamUserInfo();
 
+    console.log('[BattlePass] Creating payment form...');
     const formContainer = document.createElement('div');
     formContainer.innerHTML = createPaymentForm();
+
+    if (!document.body) {
+      console.error('[BattlePass] document.body is null!');
+      return;
+    }
+
     document.body.insertBefore(formContainer.firstElementChild, document.body.firstChild);
+    console.log('[BattlePass] Form inserted into body');
 
     if (!isCheckoutPage) {
       const toggleBtn = createToggleButton();
@@ -980,9 +1268,22 @@
     }
 
     // Страница корзины
+    console.log('[BattlePass] isCartPage:', isCartPage);
     if (isCartPage) {
-      addCartTopUpButton();
-      const cartObserver = new MutationObserver(() => addCartTopUpButton());
+      console.log('[BattlePass] Cart page detected, adding top-up button...');
+      setTimeout(() => {
+        addCartTopUpButton();
+        console.log('[BattlePass] Cart button add attempt completed');
+      }, 1000);
+
+      // Throttle MutationObserver
+      let cartObserverTimeout = null;
+      const cartObserver = new MutationObserver(() => {
+        if (cartObserverTimeout) clearTimeout(cartObserverTimeout);
+        cartObserverTimeout = setTimeout(() => {
+          addCartTopUpButton();
+        }, 500);
+      });
       cartObserver.observe(document.body, { childList: true, subtree: true });
     }
 
@@ -1163,11 +1464,150 @@
     setTimeout(handlePromocodeChange, 1000);
   }
 
+  // Получить цену и валюту из корзины Steam
+  function getCartTotal() {
+    // Способ 1: Новый интерфейс Steam - ищем по тексту "Общая стоимость" или "Estimated total"
+    const allElements = document.querySelectorAll('*');
+    for (const el of allElements) {
+      const text = el.textContent || '';
+      if ((text.includes('Общая стоимость') || text.includes('Estimated total') || text.includes('Total')) && el.children.length === 0) {
+        // Нашли label, ищем цену рядом
+        const parent = el.parentElement;
+        if (parent) {
+          const priceEl = parent.querySelector('[class*="price"], [class*="Price"], [class*="total"], [class*="Total"]') ||
+                          parent.lastElementChild;
+          if (priceEl && priceEl !== el) {
+            const priceText = priceEl.textContent || '';
+            const match = priceText.match(/(\d[\d\s,\.]*)/);
+            if (match) {
+              const amount = parseInt(match[1].replace(/[\s,\.]/g, ''));
+              let currency = 'RUB';
+              if (priceText.includes('₸') || priceText.includes('тг') || priceText.includes('KZT')) {
+                currency = 'KZT';
+              }
+              return { amount, currency };
+            }
+          }
+        }
+      }
+    }
+
+    // Способ 2: Ищем по классам нового интерфейса
+    const priceSelectors = [
+      '._2DjadWLFH3keW9rGWZKxSk', // старый класс
+      '[class*="CartTotal"]',
+      '[class*="cart_total"]',
+      '[class*="TotalPrice"]',
+      '[class*="total_price"]',
+      '[class*="EstimatedTotal"]'
+    ];
+
+    for (const selector of priceSelectors) {
+      const rows = document.querySelectorAll(selector);
+      for (const row of rows) {
+        const text = row.textContent || '';
+        if (text.includes('Общая') || text.includes('Total') || text.includes('Итого')) {
+          const match = text.match(/(\d[\d\s,\.]*)/);
+          if (match) {
+            const amount = parseInt(match[1].replace(/[\s,\.]/g, ''));
+            let currency = 'RUB';
+            if (text.includes('₸') || text.includes('тг') || text.includes('KZT')) {
+              currency = 'KZT';
+            }
+            return { amount, currency };
+          }
+        }
+      }
+    }
+
+    // Способ 3: Ищем любой элемент с ценой в области корзины
+    const cartArea = document.querySelector('[class*="cart"], [class*="Cart"], #cart_area, .cart_area');
+    if (cartArea) {
+      const priceElements = cartArea.querySelectorAll('[class*="price"], [class*="Price"], [class*="total"], [class*="Total"]');
+      for (const el of priceElements) {
+        const text = el.textContent || '';
+        const match = text.match(/(\d[\d\s,\.]*)\s*[₽₸руб]/);
+        if (match) {
+          const amount = parseInt(match[1].replace(/[\s,\.]/g, ''));
+          let currency = 'RUB';
+          if (text.includes('₸') || text.includes('тг') || text.includes('KZT')) {
+            currency = 'KZT';
+          }
+          return { amount, currency };
+        }
+      }
+    }
+
+    return null;
+  }
+
   function addCartTopUpButton() {
-    const checkoutButtons = document.querySelectorAll('button._1OKOHubCISYxpyNw0_nSgh');
+    console.log('[BattlePass] addCartTopUpButton() called');
+
+    // Логируем все кнопки на странице для отладки
+    const allButtons = document.querySelectorAll('button');
+    console.log('[BattlePass] Total buttons on page:', allButtons.length);
+    allButtons.forEach((btn, i) => {
+      if (i < 10) { // Первые 10
+        console.log(`[BattlePass] Button ${i}:`, btn.className, btn.textContent.trim().substring(0, 50));
+      }
+    });
+
+    // Селекторы для кнопки оплаты в разных версиях интерфейса Steam
+    const checkoutSelectors = [
+      'button._1OKOHubCISYxpyNw0_nSgh', // старый класс
+      'button[class*="checkout"]',
+      'button[class*="Checkout"]',
+      'button[class*="purchase"]',
+      'button[class*="Purchase"]',
+      'a[class*="checkout"]',
+      'a[class*="Checkout"]',
+      '.btn_green_steamui.btn_medium', // стандартная зелёная кнопка Steam
+      '#btn_purchase_self',
+      '[class*="CheckoutButton"]',
+      '[class*="checkout_btn"]',
+      '[class*="PurchaseButton"]'
+    ];
+
+    let checkoutButtons = [];
+    for (const selector of checkoutSelectors) {
+      const buttons = document.querySelectorAll(selector);
+      console.log(`[BattlePass] Selector "${selector}" found:`, buttons.length);
+      if (buttons.length > 0) {
+        checkoutButtons = Array.from(buttons).filter(btn => {
+          const text = (btn.textContent || '').toLowerCase();
+          return text.includes('оплат') || text.includes('checkout') || text.includes('purchase') ||
+                 text.includes('купить') || text.includes('перейти') || text.includes('continue');
+        });
+        console.log(`[BattlePass] After text filter:`, checkoutButtons.length);
+        if (checkoutButtons.length > 0) break;
+      }
+    }
+
+    // Fallback: ищем любую зелёную кнопку в области корзины
+    if (checkoutButtons.length === 0) {
+      console.log('[BattlePass] No checkout buttons found, trying fallback...');
+      const cartArea = document.querySelector('[class*="cart"], [class*="Cart"], #cart_area, .cart_area, [class*="checkout"], [class*="Checkout"]');
+      console.log('[BattlePass] Cart area found:', !!cartArea);
+      if (cartArea) {
+        console.log('[BattlePass] Cart area classes:', cartArea.className);
+        const greenButtons = cartArea.querySelectorAll('button, a.btn_green_steamui, [class*="Primary"], [class*="primary"]');
+        console.log('[BattlePass] Green buttons in cart area:', greenButtons.length);
+        checkoutButtons = Array.from(greenButtons).filter(btn => {
+          const text = (btn.textContent || '').toLowerCase();
+          return text.includes('оплат') || text.includes('checkout') || text.includes('purchase') ||
+                 text.includes('купить') || text.includes('перейти') || text.includes('continue') ||
+                 text.includes('к оплате');
+        });
+      }
+    }
+
+    console.log('[BattlePass] Final checkout buttons count:', checkoutButtons.length);
 
     checkoutButtons.forEach((checkoutBtn) => {
-      if (checkoutBtn.parentElement.querySelector('.bp-topup-btn')) return;
+      // Проверяем, не добавлена ли уже кнопка
+      const parent = checkoutBtn.parentElement;
+      if (!parent || parent.querySelector('.bp-topup-btn')) return;
 
       const topUpBtn = document.createElement('button');
       topUpBtn.type = 'button';
@@ -1176,6 +1616,8 @@
 
       topUpBtn.addEventListener('click', async () => {
         const form = document.getElementById('steam-balance-form');
+        const amountInput = document.getElementById('custom-amount');
+
         if (form) {
           form.style.display = 'block';
 
@@ -1188,12 +1630,75 @@
             }
           }
 
+          // Получаем сумму из корзины и подставляем
+          const cartData = getCartTotal();
+          if (cartData && amountInput) {
+            amountInput.value = cartData.amount;
+
+            if (cartData.currency && cartData.currency !== state.currency) {
+              state.currency = cartData.currency;
+              storageSet({ currency: cartData.currency });
+              updateCurrencyUI();
+            }
+
+            triggerRecalculate();
+          }
+
           form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
 
-      checkoutBtn.parentElement.insertBefore(topUpBtn, checkoutBtn.nextSibling);
+      parent.insertBefore(topUpBtn, checkoutBtn.nextSibling);
     });
+
+    // Если не нашли кнопки оплаты, пробуем добавить в область корзины
+    if (checkoutButtons.length === 0) {
+      const cartContainers = document.querySelectorAll('[class*="cart_area"], [class*="CartArea"], [class*="checkout_content"], [class*="CheckoutContent"], #cart_area');
+      cartContainers.forEach(container => {
+        if (container.querySelector('.bp-topup-btn')) return;
+
+        const topUpBtn = document.createElement('button');
+        topUpBtn.type = 'button';
+        topUpBtn.className = 'bp-topup-btn';
+        topUpBtn.style.marginTop = '16px';
+        topUpBtn.innerHTML = 'Пополнить баланс Steam';
+
+        topUpBtn.addEventListener('click', async () => {
+          const form = document.getElementById('steam-balance-form');
+          const amountInput = document.getElementById('custom-amount');
+
+          if (form) {
+            form.style.display = 'block';
+
+            if (state.paymentMethods.length === 0) {
+              try {
+                const methods = await fetchPaymentMethods();
+                renderPaymentMethods(methods);
+              } catch (error) {
+                showNotification('Ошибка загрузки способов оплаты', 'error');
+              }
+            }
+
+            const cartData = getCartTotal();
+            if (cartData && amountInput) {
+              amountInput.value = cartData.amount;
+
+              if (cartData.currency && cartData.currency !== state.currency) {
+                state.currency = cartData.currency;
+                storageSet({ currency: cartData.currency });
+                updateCurrencyUI();
+              }
+
+              triggerRecalculate();
+            }
+
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+
+        container.appendChild(topUpBtn);
+      });
+    }
   }
 
   // Запуск
