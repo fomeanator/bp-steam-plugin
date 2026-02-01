@@ -2,7 +2,6 @@
   "$schema": "https://raw.githubusercontent.com/SteamClientHomebrew/Millennium/main/src/sys/plugin-schema.json",
   "name": "battlepass-steam",
   "common_name": "BattlePass - Пополнение Steam",
-  "description": "Пополняйте Steam баланс без комиссии через BattlePass",
-  "version": "1.0.0",
-  "useBackend": true
+  "description": "Пополнение баланса Steam через BattlePass",
+  "version": "1.0.0"
 }
